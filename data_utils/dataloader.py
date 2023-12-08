@@ -56,8 +56,6 @@ def get_loader(
     beton_path = os.path.join(
         data_path,
         DATA_DICT[dataset],
-        'ffcv',
-        mode_name,
         real + f'{mode_name}_{data_resolution}' + sub_sampled + '.beton',
     )
 

@@ -84,7 +84,7 @@ class BottleneckMLP(nn.Module):
 
         return out
 
-    def load(self, name, checkpoint_path='./checkpoints/'):
+    def load(self, name, checkpoint_path='C:\\Users\\Leonidas\\OneDrive\Desktop\\zooming_in_on_mlps\\checkpoints\\'):
         #if name == True:
             # This simply assumes Imagenet21 pre-trained weights at the latest epoch available, no fine-tuning
         #    name = default_checkpoints[self.name]
@@ -103,7 +103,7 @@ class BottleneckMLP(nn.Module):
 
         params = {
             k: v
-            for k, v in torch.load(weight_path).items()
+            for k, v in torch.load(weight_path, map_location=torch.device('cpu')).items()
         }
 
         # Load pre-trained parameters

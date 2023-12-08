@@ -84,7 +84,7 @@ STD_DICT = {
 # Whether dataset can be cached in memory
 OS_CACHED_DICT = {
     "imagenet21": False,
-    "imagenet": False,
+    "imagenet": True,
     "imagenet_real": False,
     "tinyimagenet": True,
     "cifar10": True,
