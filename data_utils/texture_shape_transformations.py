@@ -131,7 +131,7 @@ class EdgeDetector(torch.nn.Module):
         imgs = torch.cat([imgs]*3, dim = 1)
         return imgs
 
-
+# for stylized dataset we will use offline a pretrained model. If it works
 class CustomDataset:
     def __init__(self, dataset, dir_path):
         
@@ -154,29 +154,54 @@ class CustomDataset:
     def __len__(self):
         return len(self.labels_dict)
 
+
+def save_image(img, file_name, dir):
+    if isinstance(img, torch.Tensor):   img = img.numpy()
+    im = Image.fromarray(img)
+    path_to_save = os.path.join(dir, file_name)
+    im.save(path_to_save)
+
 # Define an ffcv dataloader
-def get_pipeline(dataset_type, crop_resolution, dtype):
-    if dataset_type == 'occluded':
+def get_image_pipeline(crop_resolution, dtype, dev, mean, std, dataset_type=None):
+    if dataset_type == None:
         image_pipeline: List[Operation] = [CenterCropRGBImageDecoder(output_size=(crop_resolution, crop_resolution), ratio=1),
                                            ToTensor(),
+                                           ToDevice(dev, non_blocking=True),
                                            ToTorchImage(),
-                                           RandomOcclusions(0.7,8)]
+                                           Convert(dtype),
+                                           torchvision.transforms.Normalize(mean, std)
+                                           ]
+    elif dataset_type == 'occluded':
+        image_pipeline: List[Operation] = [CenterCropRGBImageDecoder(output_size=(crop_resolution, crop_resolution), ratio=1),
+                                           ToTensor(),
+                                           ToDevice(dev, non_blocking=True),
+                                           ToTorchImage(),
+                                           Convert(dtype),
+                                           torchvision.transforms.Normalize(mean, std),
+                                           RandomOcclusions(0.5,8)
+                                           ]
     elif dataset_type == 'shuffled':
         image_pipeline: List[Operation] = [CenterCropRGBImageDecoder(output_size=(crop_resolution, crop_resolution), ratio=1),
                                            ToTensor(),
+                                           ToDevice(dev, non_blocking=True),
                                            ToTorchImage(),
                                            Convert(dtype),
+                                           torchvision.transforms.Normalize(mean, std),
                                            ShufflePatches(8)
                                            ]
     elif dataset_type == 'grayscale':
         image_pipeline: List[Operation] = [CenterCropRGBImageDecoder(output_size=(crop_resolution, crop_resolution), ratio=1),
                                            ToTensor(),
+                                           ToDevice(dev, non_blocking=True),
                                            ToTorchImage(),
+                                           Convert(dtype),
+                                           torchvision.transforms.Normalize(mean, std),
                                            CustomGrayscale()
                                            ]
     elif dataset_type == 'edged':
         image_pipeline: List[Operation] = [CenterCropRGBImageDecoder(output_size=(crop_resolution, crop_resolution), ratio=1),
                                            ToTensor(),
+                                           ToDevice(dev, non_blocking=True),
                                            ToTorchImage(),
                                            Convert(dtype),
                                            EdgeDetector()
@@ -184,7 +209,14 @@ def get_pipeline(dataset_type, crop_resolution, dtype):
 
     return image_pipeline
 
-def get_loader(
+def get_label_pipeline(dev):
+    labe_pipeline: List[Operation] = [IntDecoder(), 
+                                      ToTensor(),
+                                      ToDevice(dev, non_blocking=True), 
+                                      Squeeze()]  
+    return labe_pipeline
+
+def get_Shapeloader(
     dataset,
     bs,
     mode,
@@ -222,12 +254,9 @@ def get_loader(
     mean = MEAN_DICT[dataset]
     std  = STD_DICT[dataset]
 
-    if dataset == 'imagenet_real' and mode != 'train':
-        label_pipeline: List[Operation] = [NDArrayDecoder()]
-    else:
-        label_pipeline: List[Operation] = [IntDecoder()]
+    image_pipeline = get_image_pipeline(crop_resolution, dtype, dev, mean, std, dataset_type)
+    label_pipeline = get_label_pipeline(dev)
     
-    image_pipeline = get_pipeline(dataset_type, crop_resolution, dtype)
     
     if mode == 'train':
         num_samples = SAMPLE_DICT[dataset] if num_samples is None else num_samples
@@ -245,67 +274,3 @@ def get_loader(
         os_cache=os_cache,
         indices=indices,
     )
-
-def save_image(img, file_name, dir):
-    if isinstance(img, torch.Tensor):   img = img.numpy()
-    im = Image.fromarray(img)
-    path_to_save = os.path.join(dir, file_name)
-    im.save(path_to_save)
-
-def main():
-    mode            = 'test'
-    dataset         = 'cifar10' # cifar10, cifar100, imagenet
-    data_resolution = 32        # 32, 64
-    crop_resolution = 64
-    data_path       = '/scratch/beton'
-    batch_size      = 512
-    device          = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    write_path      = '/scratch/beton'
-    dataset_type    = 'edged' # occluded, shuffled, grayscale, edged,stylized
-
-    loader = get_loader(
-        dataset   = dataset,
-        bs        = batch_size,
-        mode      = "test",
-        augment   = "False",
-        dev       = device,
-        mixup     = 0.0,
-        data_path = data_path,
-        data_resolution = data_resolution,
-        crop_resolution = crop_resolution,
-        dataset_type    = dataset_type
-        )
-    
-    temp_dir = os.path.join('/tmp', f'{dataset}_{dataset_type}')
-    if os.path.exists(temp_dir) == False:   os.makedirs(temp_dir)
-
-    batch_id   = 0
-    counter    = 0
-    label_dict = dict()
-    
-    with torch.no_grad():
-        for imgs, targs in tqdm(loader, desc="Dataset Creation"):
-            for idx in range(imgs.size(0)):
-
-                file_name = f'batch_{batch_id}_pos_{idx}_class_{targs[idx].item(0)}.jpg'
-                save_image(imgs[idx], file_name, temp_dir)
-                label_dict[counter] = {'batch':batch_id, 'index':idx, 'class': targs[idx].item(0)}
-                counter += 1
-            
-            batch_id += 1
-            break
-    
-    # write label dict in a json file
-    json_obj   = json.dumps(label_dict)
-    label_path = os.path.join(temp_dir, f'{dataset}_labels.json')
-    with open(label_path, "w") as outfile:
-        outfile.write(json_obj)
-    
-    # dump dataset as beton
-    #write_path = os.path.join(
-    #    write_path, f"{dataset}_{dataset_type}", f"{mode}_{crop_resolution}.beton"
-    #)
-    #os.makedirs(os.path.dirname(write_path), exist_ok=True)
-
-if __name__ == '__main__':
-    main()
