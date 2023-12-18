@@ -103,7 +103,7 @@ class BottleneckMLP(nn.Module):
 
         params = {
             k: v
-            for k, v in torch.load(weight_path).items()
+            for k, v in torch.load(weight_path, map_location=torch.device('cpu')).items()
         }
 
         # Load pre-trained parameters
