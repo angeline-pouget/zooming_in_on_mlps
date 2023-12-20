@@ -64,10 +64,7 @@ def get_loader(
     mean = MEAN_DICT[dataset]
     std = STD_DICT[dataset]
 
-    if dataset == 'imagenet_real' and mode != 'train':
-        label_pipeline: List[Operation] = [NDArrayDecoder()]
-    else:
-        label_pipeline: List[Operation] = [IntDecoder()]
+    label_pipeline: List[Operation] = [IntDecoder()]
 
     if augment:
         image_pipeline: List[Operation] = [
@@ -99,15 +96,6 @@ def get_loader(
     if mode == 'train':
         num_samples = SAMPLE_DICT[dataset] if num_samples is None else num_samples
 
-        # Shuffle indices in case the classes are ordered
-        #indices = list(range(num_samples))
-
-        #random.seed(0)
-        #random.shuffle(indices)
-        indices = None
-    else:
-        indices = None
-
     return Loader(
         beton_path,
         batch_size=bs,
@@ -116,5 +104,5 @@ def get_loader(
         drop_last=(mode == 'train'),
         pipelines={'image': image_pipeline, 'label': label_pipeline},
         os_cache=os_cache,
-        indices=indices,
+        indices=None,
     )
