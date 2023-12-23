@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-def find_layers(model):
+
+def _find_layers_mlp(model):
     #counts only the linear layers, need work for vits and cnns
     #print(model)
     name_list = []
@@ -11,7 +12,44 @@ def find_layers(model):
             name_list.append(name)
     return name_list, len(name_list)
 
-def register_hooks(model, activations):
+def _find_layers_cnn(model):
+    #counts only the linear layers, need work for vits and cnns
+    #print(model)
+    name_list = []
+    matches   = ['Linear', 'Conv2d', 'AdaptiveAvgPool2d', 'SelectAdaptivePool2d', 'Identity'] 
+    for name, module in model.named_modules():
+        module_type = str(type(module))
+        if any(x in module_type for x in matches):
+            name_list.append(name)
+    return name_list, len(name_list)
+
+def _find_layers_vit(model):
+    #counts only the linear layers, need work for vits and cnns
+    #print(model)
+    name_list = []
+    matches   = ['Attention', 'Linear']
+    for name, module in model.named_modules():
+        module_type = str(type(module))
+        if any(x in module_type for x in matches):
+            name_list.append(name)
+    return name_list, len(name_list)
+
+def find_layers(model, model_type = 'mlp'):
+    if model_type == 'mlp':
+        name_list, name_len = _find_layers_mlp(model)
+    elif model_type == 'cnn':
+        name_list, name_len = _find_layers_cnn(model)
+    elif model_type == 'vit':
+        name_list, name_len = _find_layers_vit(model)
+    return name_list, name_len
+    
+def register_hooks(model, activations, model_type = 'mlp'):
+    if model_type == 'mlp':
+        matches = ['Linear']
+    elif model_type == 'cnn':
+        matches = ['Linear', 'Conv2d', 'AdaptiveAvgPool2d', 'SelectAdaptivePool2d', 'Identity']
+    elif model_type == 'vit':
+        matches = ['Attention', 'Linear']
 
     def get_activation(name):
         def hook(model, input, output):
@@ -20,14 +58,13 @@ def register_hooks(model, activations):
     
     for name, module in model.named_modules():
         module_type = str(type(module))
-        if module_type.find('Linear') !=-1:
-            module.register_forward_hook(get_activation(name))
+        if any(x in module_type for x in matches):
+            module.register_forward_hook(get_activation(name)) 
 
 def get_activations(imgs, model, activations):
     preds = model(imgs)
     acts  = [activations[k] for k in activations.keys()]
     return acts
-
 
 def process_batch(model, imgs, cka, activations):
    acts = get_activations(imgs, model, activations)
@@ -42,7 +79,6 @@ class MinibatchCKA():
         self.hsic_accumulator = torch.zeros((num_layers, num_layers2), dtype=dtype)
     
         if across_models:
-            print("yoooop")
             self.hsic_accumulator_model1 = torch.zeros((num_layers, ), dtype=dtype)
             self.hsic_accumulator_model2 = torch.zeros((num_layers2,), dtype=dtype)
     
@@ -113,7 +149,7 @@ class MinibatchCKA():
             normalization1 = torch.sqrt(self.hsic_accumulator_model1)
             normalization2 = torch.sqrt(self.hsic_accumulator_model2)
             mean_hsic      = self.hsic_accumulator / normalization1[:, None]
-            mean_hsic      = mean_hsic / normalization2[:, None]
+            mean_hsic      = mean_hsic / normalization2[None, :]
         else:
             normalization = torch.sqrt(torch.diagonal(self.hsic_accumulator))
             mean_hsic     = self.hsic_accumulator/normalization[:, None]
