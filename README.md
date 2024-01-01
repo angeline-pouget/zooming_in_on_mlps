@@ -12,6 +12,10 @@ For installing the *FFCV* dataloading framework, we refer to the original [repos
 ### Downloading Data
 In order to use the efficiency of MLPs to the fullest, we are using a more optimised data loading framework than the standard one provided by *torch*. This is because the data transfer from CPU to GPU otherwise becomes the bottleneck of training, not the gradient computation. To ensure a faster data transfer, we use the *FFCV* framework, which requires converting your dataset first to the **beton** format. 
 
+To simplify this, we provide the CIFAR-10, CIFAR-100 and ImageNet datasets in a beton format. To download these datasets, run
+>`pip install gdown`
+>`gdown --folder https://drive.google.com/drive/folders/1VVmQvM_NqxDlldpRvz323C0YIWt6p-AA`
+
 ## Running Experiments
 As described in our report, we ran a range of experiments to compare the different models against each other. In the following, we describe in detail how each of these experiments can be replicated using the code provided in this repository.
 
