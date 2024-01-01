@@ -24,6 +24,7 @@ gdown --folder https://drive.google.com/drive/folders/1VVmQvM_NqxDlldpRvz323C0YI
 As described in our report, we ran a range of experiments to compare the different models against each other. In the following, we describe in detail how each of these experiments can be replicated using the code provided in this repository.
 
 ### Model Finetuning
+Due to resource constraints, it was not possible to train our own MLPs, CNNs and ViTs from scratch in the context of this project. Since we already had access to pre-trained MLP and CNN models on CIFAR-10 and CIFAR-100, we decided to fine-tune the linear classifiers of the "vit_small_patch16_224" vision transformer provided with pre-trained weights by the **timm** library. The code for this, as well as the final models that have been fine-tuned for 7 epochs each can be found in vit_finetuning.
 
 ### Adversarial Accuracy
 
