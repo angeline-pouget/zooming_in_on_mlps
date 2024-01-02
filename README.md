@@ -16,7 +16,6 @@ In order to use the efficiency of MLPs to the fullest, we are using a more optim
 
 To simplify this, we provide the CIFAR-10, CIFAR-100 and ImageNet datasets in a beton format. To download these datasets, run
 ```
-pip install gdown
 gdown --folder https://drive.google.com/drive/folders/1VVmQvM_NqxDlldpRvz323C0YIWt6p-AA
 ```
 
