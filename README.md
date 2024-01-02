@@ -23,15 +23,20 @@ gdown --folder https://drive.google.com/drive/folders/1VVmQvM_NqxDlldpRvz323C0YI
 ## Running Experiments
 As described in our report, we ran a range of experiments to compare the different models against each other. In the following, we describe in detail how each of these experiments can be replicated using the code provided in this repository.
 
-### Model Finetuning
-Due to resource constraints, it was not possible to train our own MLPs, CNNs and ViTs from scratch in the context of this project. Since we already had access to pre-trained MLP and CNN models on CIFAR-10 and CIFAR-100, we decided to fine-tune the linear classifiers of the "vit_small_patch16_224" vision transformer provided with pre-trained weights by the **timm** library. The code for this, as well as the final models that have been fine-tuned for 7 epochs each can be found in vit_finetuning.
+### 01 Model Finetuning
+Due to resource constraints, it was not possible to train our own MLPs, CNNs and ViTs from scratch in the context of this project. Since we already had access to pre-trained MLP and CNN models on CIFAR-10 and CIFAR-100, we decided to fine-tune the linear classifiers of the "vit_small_patch16_224" vision transformer provided with pre-trained weights by the **timm** library. The code for this, as well as the final models that have been fine-tuned for 7 epochs each can be found in 01_vit_finetuning.ipynb.
 
-### Adversarial Accuracy
+### 02 Adversarial Accuracy
+We implemented the untargeted FGSM and the PGD algorithm to test the adversarial accuracy of different models on CIFAR-10 and CIFAR-100. We then also looked at the transferability of adversarial examples between the different model architectures. The code to generate and evaluate adversarial examples can be found in 02_adversarial_robustness.ipynb.
 
-### Feature Extraction Ability
+### 03 Feature Extraction Ability
 
-### Feature Generalizability
+### 04 Feature Generalizability
 
-### Time Complexity and Performance
+### 05 Time Complexity and Performance
+We compared the inference time, total size, parameter size and forward / backward pass size between the different models, also taking into account the classification accuracy. The code for this can be found in 05_inference_time.ipynb.
 
-### Improving the MLP
+### 06 Improving the MLP
+
+### 07 Results & Plotting
+Any plots we generated for the report have been generated using 07_plots.ipynb.
