@@ -168,7 +168,7 @@ def generate_image(model, target_class, epochs, min_prob, lr, weight_decay,
 
 
 def feature_inversion(model, 
-                      modules, 
+                      modules_names, 
                       img, 
                       noise_size,
                       epochs, 
@@ -184,9 +184,9 @@ def feature_inversion(model,
     recreated_imgs = []
     orig_img       = img
 
-    for module in modules:   
+    for module_name in modules_names:   
         recreated_imgs.append(feature_inversion_helper(model, 
-                                                       module, 
+                                                       module_name, 
                                                        orig_img, 
                                                        epochs     = epochs,
                                                        lr         = lr, 
@@ -209,7 +209,7 @@ def feature_inversion(model,
 
 
 def feature_inversion_helper(model,
-                             module, 
+                             module_name, 
                              orig_img, 
                              epochs, lr, 
                              step_size, 
@@ -231,8 +231,13 @@ def feature_inversion_helper(model,
 
     acts = [0]    
     def hook_fn(self, input, output):
-        acts[0] = output    
-    handle = module.register_forward_hook(hook_fn)
+        acts[0] = output
+    
+    for name, module in model.named_modules():
+        if name == module_name:
+            print(module)
+            handle = module.register_forward_hook(hook_fn)
+            break
     
     _             = model(orig_img)
     orig_features = acts[0]
@@ -284,7 +289,7 @@ def feature_inversion_helper(model,
         with torch.no_grad():
             noise       = noise - lr*grad_tensor
             #noise       = denormalize(noise, mean, std)
-            noise.clamp_(min=0.0, max = 1.0)
+            noise.clamp_(min=0.0001, max = 1.0)
             #noise       = normalize(noise, mean, std)
         
             
