@@ -25,9 +25,23 @@ class Normalize(torch.nn.Module):
     
     def forward(self, x):
         x = (x-self.mean)/self.std
-        if self.model_type == 'mlp':
-            x = torch.reshape(x, (1, -1))
+        #if self.model_type == 'mlp':
+        #    x = torch.reshape(x, (1, -1))
         return x
+
+class Reshape(torch.nn.Module): 
+    def __init__(self, shape=224): 
+        super(Reshape, self).__init__()
+        self.shape = shape 
+        
+    def forward(self, x): 
+        shape = self.shape
+        x = transforms.functional.resize(x, size=(shape, shape))
+        if shape == 64:
+            bs = x.shape[0]
+            x = torch.reshape(x, shape=(bs,-1,))
+        return x
+
     
 def denormalize(tensor, mean, std):
     return tensor*std + mean
@@ -126,9 +140,12 @@ def generate_image(model, target_class, epochs, min_prob, lr, weight_decay,
             break
         
         p = softmax(outs[0], dim = 0)[target_class]
-        print("probability for target class", p.item())
-        if p.item() > 0.95: break
+        pp = softmax(outs[0], dim = 0)
         
+        print("probability for target class", p.item())
+        print("all probabilities", pp)
+        if p.item() > 0.95: break
+
         noise.requires_grad = False
         with torch.no_grad():
             noise       = noise - lr*grad_tensor
