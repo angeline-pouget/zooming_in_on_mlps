@@ -29,7 +29,7 @@ Due to resource constraints, it was not possible to train our own MLPs, CNNs and
 We implemented the untargeted FGSM and the PGD algorithm to test the adversarial accuracy of different models on CIFAR-10 and CIFAR-100. We then also looked at the transferability of adversarial examples between the different model architectures. The code to generate and evaluate adversarial examples can be found in 02_adversarial_robustness.ipynb.
 
 ### 03 Feature Extraction Ability
-To test the models inclation towards the shape or the texture of an image, we performed a set of transformations on the CIFAR10 dataset and measured the models accuracy for every class of the dataset in comparison to that of a CNN and a ViT. The code for modifying images and running the described "texture vs shape bias" experiment can be found in 03_texture_vs_shape_bias.ipynb. 
+To assess the model's inclination towards recognizing either the shape or texture of images, an experiment was conducted using the CIFAR-10 dataset. The dataset underwent a series of transformations, and the model's accuracy for each class was measured. The results were then compared to those obtained from Convolutional Neural Network (CNN) and Vision Transformer (ViT) models. For detailed implementation and analysis, refer to the "03.1_texture_vs_shape_bias.ipynb" notebook. 
 
 ### 04 Feature Generalizability
 
