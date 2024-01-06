@@ -179,23 +179,35 @@ def feature_inversion(model,
                       device    = 'cuda', 
                       rgb       = True, 
                       figsize   = (16, 16), 
-                      save_path = None):
+                      save_path = None,
+                      mode      = 0):
     
     recreated_imgs = []
     orig_img       = img
 
-    for module_name in modules_names:   
-        recreated_imgs.append(feature_inversion_helper(model, 
-                                                       module_name, 
-                                                       orig_img, 
-                                                       epochs     = epochs,
-                                                       lr         = lr, 
-                                                       step_size  = step_size,
-                                                       gamma      = gamma, 
-                                                       mu         = mu,
-                                                       noise_size = noise_size, 
-                                                       device     = device))
-        
+    for module_name in modules_names:
+        if mode == 1:   
+            recreated_imgs.append(feature_inversion_helper(model, 
+                                                        module_name, 
+                                                        orig_img, 
+                                                        epochs     = epochs,
+                                                        lr         = lr, 
+                                                        step_size  = step_size,
+                                                        gamma      = gamma, 
+                                                        mu         = mu,
+                                                        noise_size = noise_size, 
+                                                        device     = device))
+        elif mode == 2:
+            recreated_imgs.append(feature_inversion_helper2(model, 
+                                                        module_name, 
+                                                        orig_img, 
+                                                        epochs     = epochs,
+                                                        lr         = lr, 
+                                                        step_size  = step_size,
+                                                        gamma      = gamma, 
+                                                        mu         = mu,
+                                                        noise_size = noise_size, 
+                                                        device     = device))
     fig, axs = plt.subplots(1, len(recreated_imgs), figsize = figsize)
     
     for i in range(len(recreated_imgs)):
@@ -235,7 +247,93 @@ def feature_inversion_helper(model,
     
     for name, module in model.named_modules():
         if name == module_name:
-            print(module)
+            handle = module.register_forward_hook(hook_fn)
+            break
+    
+    _             = model(orig_img)
+    orig_features = acts[0]
+    
+    noise = init([1, 3, noise_size, noise_size]).to(device)
+    noise = denormalize(noise, mean, std)
+    noise.clamp_(min=0.0, max = 1.0)
+    noise = normalize(noise, mean, std)
+
+    noise.requires_grad = True
+    
+    opt         = torch.optim.SGD([noise], lr = lr,  momentum=0.9)
+
+    alpha_reg_alpha  = 6
+    alpha_reg_lambda = 1e-7
+
+    tv_reg_beta   = 2
+    tv_reg_lambda = 1e-8
+
+    for i in range(epochs):
+
+        noise.requires_grad = True
+        
+        opt.zero_grad()
+        model.zero_grad()
+        
+        _ = model(noise)
+        curr_features = acts[0]
+
+        euc_loss            = 1e-1 * euclidian_loss(orig_features, curr_features)
+        reg_alpha           = alpha_reg_lambda * alpha_norm(noise, alpha_reg_alpha)
+        reg_total_variation = tv_reg_lambda * total_variation_norm(noise, tv_reg_beta)
+         
+        loss = euc_loss + reg_alpha + reg_total_variation
+        
+        loss.backward(retain_graph = True)
+        grad_tensor = noise.grad
+        opt.step()
+        print(loss.item())
+
+        if i % 40 == 0:
+            for param_group in opt.param_groups:
+                param_group['lr'] *= 1/10
+
+        #if i % 40 == 0:
+        #    lr = lr/10
+
+        #noise.requires_grad = False
+        #with torch.no_grad():
+        #    noise       = noise - lr*grad_tensor
+            #noise       = denormalize(noise, mean, std)
+        #    noise.clamp_(min=0.0001, max = 1.0)
+            #noise       = normalize(noise, mean, std)
+        
+            
+    handle.remove()
+    return noise    
+
+def feature_inversion_helper2(model,
+                             module_name, 
+                             orig_img, 
+                             epochs, lr, 
+                             step_size, 
+                             gamma, 
+                             mu, 
+                             noise_size = 224, 
+                             init = torch.randn, 
+                             device = 'cpu',
+                             dataset = 'cifar10'):
+    
+    """
+        Performs feature inversion on one module
+    """
+
+    mean = MEAN_DICT[dataset]/255
+    mean = torch.tensor(mean, dtype = torch.float32).unsqueeze(0).unsqueeze(2).unsqueeze(3)
+    std  = STD_DICT[dataset]/255
+    std = torch.tensor(std, dtype = torch.float32).unsqueeze(0).unsqueeze(2).unsqueeze(3)
+
+    acts = [0]    
+    def hook_fn(self, input, output):
+        acts[0] = output
+    
+    for name, module in model.named_modules():
+        if name == module_name:
             handle = module.register_forward_hook(hook_fn)
             break
     
@@ -294,4 +392,4 @@ def feature_inversion_helper(model,
         
             
     handle.remove()
-    return noise    
+    return noise 
