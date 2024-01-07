@@ -75,6 +75,7 @@ def reliability_plot(confs, preds, labels, num_bins=15):
             color='blue', alpha=0.5, label='Actual')
     plt.ylabel('Accuracy')
     plt.xlabel('Confidence')
+    plt.title('Reliability Plot')
     plt.legend()
     plt.show()
 
