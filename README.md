@@ -1,6 +1,6 @@
 ﻿# Zooming in on MLPs
 
-This repository contains the code accompanying our [report](https://openreview.net/forum?id=z5o1peD5wd&noteId=z5o1peD5wd) **Zooming in on MLPs** describing the research project completed in the context of the Deep Learning lecture at ETH Zurich in autumn 2023. In this work we compare the performance of different neural networks architectures, namely multi-layer perceptrons (MLP), convolutional neural networks (CNN) and vision transformers (ViT), with respect to several dimensions such as adversarial robustness or feature extraction ability. 
+This repository contains the code accompanying our [report](https://drive.google.com/file/d/1HDl_v6ov1gv6fnhMwHMJRAQf-4DhL60F/view?usp=sharing) **Zooming in on MLPs** describing the research project completed in the context of the Deep Learning lecture at ETH Zurich in autumn 2023. In this work we compare the performance of different neural networks architectures, namely multi-layer perceptrons (MLP), convolutional neural networks (CNN) and vision transformers (ViT), with respect to several dimensions such as adversarial robustness or feature extraction ability. 
 
 ## Setup
 For installing the *ffcv* dataloading framework, we refer to the original [repository](https://github.com/libffcv/ffcv). To install the remaining packages, activate the *ffcv* environment and run 
